@@ -1,35 +1,31 @@
 # Pokémon Distribution ROM [![Build Status][ci-badge]][ci]
 
-A Game Boy **event-distribution cartridge** for French Pokémon: Version Rouge
-and Bleue — the kind of cart Nintendo used to bring to events to hand out
-Mew.
-
-The ROM boots straight into a gift menu instead of the game. Pick any of the
-151 Pokémon and a level, then link a second Game Boy running a real
-Rouge / Bleue / Jaune cartridge and trade the gift across at the Cable Club,
-exactly like a normal player-to-player trade.
+An event-distribution cart for the French Pokémon Rouge and Bleue. It boots
+into a menu. You pick any of the 151 Pokémon and a level, then trade that
+Pokémon to a real cartridge over a link cable.
 
 <p align="center">
-  <img src="docs/screenshots/title.png" width="47%"
-       alt="Title screen: the Pokemon logo above the words DISTRIBUTION ROM, with Mew standing next to the player">
-  <img src="docs/screenshots/menu.png" width="47%"
-       alt="The gift menu: a scrolling list of French Pokemon names with Mew selected, its sprite, Pokedex number 151 and PSY type beside it, and NIVEAU: 50 below">
+  <img src="docs/screenshots/title.png" width="42%"
+       alt="Title screen: the Pokemon logo above the words DISTRIBUTION ROM, with Mew next to the player">
+  <img src="docs/screenshots/menu.png" width="42%"
+       alt="The menu: a list of French Pokemon names with Mew selected, its sprite, number 151 and PSY type beside it">
+  <br>
+  <img src="docs/screenshots/level.png" width="42%"
+       alt="The level screen: NIVEAU: 50 under the list">
+  <img src="docs/screenshots/ready.png" width="42%"
+       alt="A box reading PRET A ECHANGER! / PARLEZ A LA DAME / START+SELECT: MENU">
 </p>
 
 ## How it works
 
-This is a **fork of the French [pokered][pokered-fr] disassembly**, not a
-standalone ROM. That is the whole design decision: the receiving side is an
-unmodified retail cartridge, so the link protocol has to be right down to the
-byte — including the two players' movement sync in the trade room. Rather
-than reimplement it, the distribution front-end builds a valid one-Pokémon
-party in WRAM and then hands off to the game's **own, untouched Cable Club
-code**. Protocol correctness is inherited, not written.
+This is a fork of the French pokered disassembly. The other Game Boy runs a
+retail cartridge, so the link protocol has to match it byte for byte. The menu
+builds a one-Pokémon party in WRAM and then hands off to the game's own Cable
+Club code, which is unchanged.
 
-The gift is a legitimate Pokémon: correct species and level, stats computed
-with the real Gen 1 formula from random DVs, the level-up moveset for that
-level, the species name as its nickname, and the operator's name and a random
-ID number as its OT.
+The gift is a valid Pokémon. It has the right stats for its level, a level-up
+moveset, random DVs, the species name as its nickname, and your name plus a
+random ID as its OT.
 
 ## Controls
 
@@ -37,7 +33,7 @@ ID number as its OT.
 
 | Button | Action |
 | --- | --- |
-| Up / Down | Move one entry (hold to repeat; wraps, so Mew is one press *up* from Bulbizarre) |
+| Up / Down | Move one entry. Hold to repeat. Wraps, so Mew is one press up from Bulbizarre |
 | Left / Right | Page by 10 |
 | Start | Jump to a Pokédex number |
 | Select | Settings |
@@ -49,122 +45,85 @@ ID number as its OT.
 | --- | --- |
 | Up / Down | ±1 |
 | Left / Right | ±10 |
-| A | Confirm and build the gift |
+| A | Confirm |
 | B | Back to the list |
 
 **Anywhere**
 
 | Button | Action |
 | --- | --- |
-| Start + Select (held ~½ s) | Return to the gift menu |
+| Start + Select, held half a second | Back to the menu |
 
-Start on the list opens a three-digit jump, so reaching #151 never means
-paging through the other 150:
-
-<p align="center">
-  <img src="docs/screenshots/jump.png" width="47%"
-       alt="The jump prompt: a box reading No [1] 5 1, with the first digit bracketed">
-  <img src="docs/screenshots/level.png" width="47%"
-       alt="The level screen: NIVEAU: 50 under the list, with the hints HAUT/BAS:1 G/D:10 and A: OK B: RETOUR">
-</p>
-
-Start + Select is the operator's reset between visitors — no power cycle, and
-the settings survive it. It deliberately **refuses to fire during a link
-session**, since bailing out mid-trade would leave the other console hanging.
+Start + Select resets the cart between visitors, with no power cycle. It does
+nothing during a link session, so you cannot drop a trade halfway.
 
 ## Settings
 
-Select on the list opens the settings screen. `NOM:` sets the **OT name** that
-every gift is stamped with, using the game's own naming screen; it defaults to
-`OneSear` and is capped at 7 characters, which is what a traded Pokémon's OT
-field shows. Both the name and the chosen level persist across
-Start + Select, because one event usually means handing out one level under
-one OT.
+Press Select on the list. `NOM:` sets the OT name stamped on every gift. It
+defaults to `OneSear` and holds 7 characters. The name and the level are both
+kept when you press Start + Select.
 
-<p align="center">
-  <img src="docs/screenshots/settings.png" width="47%"
-       alt="The settings screen: REGLAGES, with the single row NOM: OneSear and the hints A: MODIFIER and B: RETOUR">
-</p>
+## Build
 
-## Building
-
-Needs [**rgbds**](https://rgbds.gbdev.io/) 0.9.3 or newer (developed on
-1.0.3). See [**INSTALL.md**](INSTALL.md) for platform-by-platform setup.
+You need [rgbds](https://rgbds.gbdev.io/) 0.9.3 or newer. See
+[INSTALL.md](INSTALL.md) for setup.
 
 ```sh
 make
 ```
 
-That is the only target, and it produces **`pokemon_distribution.gb`** (1 MB).
-The build is reproducible: a clean rebuild is byte-identical.
+This writes `pokemon_distribution.gb`, 1 MB. A clean rebuild is byte-identical.
+The extension is `.gb` because the CGB flag at `$0143` is `$00`. The ROM runs on
+a Game Boy, a Super Game Boy and a Game Boy Color.
 
-The extension is `.gb`, not the `.gbc` this disassembly used upstream, because
-the ROM really is a plain DMG game — the CGB flag at `$0143` is `$00`. It runs
-on a Game Boy, a Super Game Boy and a Game Boy Color in compatibility mode
-alike, and all three are accounted for (the Super Game Boy needed its palette
-set explicitly, since the removed intro was what used to do it).
+## Handing out a Pokémon
 
-## Running an event
-
-1. Boot the cart. Press Start at the title.
-2. Set the OT name once, via Select, if you want something other than `OneSear`.
-3. Pick the Pokémon and the level, press A. The screen says `PRET A ECHANGER!`;
-   press A again and you are standing in a Pokémon Center, in front of the link
+1. Boot the cart and press Start.
+2. Press Select if you want to change the OT name.
+3. Pick a Pokémon with A, set the level, press A again.
+4. Press A once more. You are now in a Pokémon Center, in front of the link
    receptionist.
+5. Connect the two Game Boys. Send the other player to any Cable Club, then
+   talk to the receptionist on both ends and trade.
+6. Press Start + Select for the next visitor.
 
-   <p align="center">
-     <img src="docs/screenshots/ready.png" width="47%"
-          alt="The ready screen: a box reading PRET A ECHANGER! / PARLEZ A LA DAME / START+SELECT: MENU over the selected Mew">
-   </p>
+The cart trades its only Pokémon away, so step 6 builds a fresh one.
 
-4. Link the two Game Boys, have the visitor go to any Pokémon Center's Cable
-   Club, and talk to the lady on both ends. Trade as normal.
-5. Press Start + Select to come back for the next visitor.
-
-The cart trades its only Pokémon away each time, which is why step 5 rebuilds
-a fresh party rather than reusing the old one.
-
-## What changed from upstream
+## What was changed
 
 | File | |
 | --- | --- |
-| `engine/menus/distribution.asm` | the whole front-end: list, sprite preview, level, settings, jump-to-number, party builder |
-| `gfx/distribution_banner.asm` | the "DISTRIBUTION ROM" title banner, drawn from the game's own font |
-| `engine/movie/title.asm` | banner in place of the version logo; title mon pinned to Mew; copyright row removed; Start enters the menu |
-| `home/init.asm` | intro battle and copyright screen skipped |
-| `engine/joypad.asm` | the Start + Select return hook |
-| `main.asm`, `layout.link`, `ram/wram.asm` | bank `$2D` for the front-end, and its WRAM state |
-| `Makefile` | one target instead of the red/blue/debug/VC matrix |
+| `engine/menus/distribution.asm` | the menu, sprite preview, settings and party builder |
+| `gfx/distribution_banner.asm` | the "DISTRIBUTION ROM" banner |
+| `engine/movie/title.asm` | new banner, Mew on the title, Start opens the menu |
+| `home/init.asm` | skips the intro battle |
+| `engine/joypad.asm` | the Start + Select hook |
+| `main.asm`, `layout.link`, `ram/wram.asm` | bank `$2D` and its WRAM |
+| `Makefile` | one target instead of four |
 
-Everything else — the Cable Club, the trade, the sprites, the text engine — is
-upstream, unmodified, and meant to stay that way.
+The Cable Club, the trade code, the sprites and the text engine are untouched.
 
 ## Status
 
-Verified headlessly in [PyBoy][pyboy], on both DMG and CGB: every one of the
-151 list positions and preview sprites, the scrolling and paging maths, the
-jump-to-number clamping, party bytes against the real Gen 1 stat formula, the
-OT name round trip, and nine consecutive Start + Select returns with no stack
-growth.
+Tested in PyBoy on DMG and CGB: all 151 list entries and preview sprites, the
+scrolling and paging, the party bytes against the Gen 1 stat formula, and the
+Start + Select return.
 
-The screenshots above are captured headlessly from the SameBoy core, in DMG
-mode, by [`docs/capture_screenshots.py`](docs/capture_screenshots.py) — run it
-after `make` to regenerate them.
+The link trade itself is untested. That needs two SameBoy instances or real
+hardware.
 
-**Not yet verified: the actual two-Game-Boy link trade.** PyBoy cannot emulate
-a link cable, so this needs either two SameBoy instances (Connect menu) or, as
-it should be, real hardware and a real cartridge.
+Screenshots come from [`docs/capture_screenshots.py`](docs/capture_screenshots.py),
+which drives the SameBoy libretro core. Run it after `make` to redo them.
 
 ## Credits
 
-- [**pret/pokered**][pokered] — the Pokémon Red/Blue disassembly this is all built on
-- [**einstein95/pokered-fr**][pokered-fr] — the French Rouge/Bleue disassembly forked here
+Built on [pret/pokered][pokered] and the French fork
+[einstein95/pokered-fr][pokered-fr].
 
-Pokémon is a trademark of Nintendo / Creatures / GAME FREAK. This repository
-contains no game data: you build the ROM yourself from the disassembled source.
+Pokémon is a trademark of Nintendo, Creatures and GAME FREAK. This repository
+holds no game data. You build the ROM from source yourself.
 
 [pokered]: https://github.com/pret/pokered
 [pokered-fr]: https://github.com/einstein95/pokered-fr
-[pyboy]: https://github.com/Baekalfen/PyBoy
 [ci]: https://github.com/OneSear/pokemon-distribution-rom/actions
 [ci-badge]: https://github.com/OneSear/pokemon-distribution-rom/actions/workflows/main.yml/badge.svg
