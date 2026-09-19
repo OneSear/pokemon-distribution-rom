@@ -9,6 +9,13 @@ The ROM boots straight into a gift menu instead of the game. Pick any of the
 Rouge / Bleue / Jaune cartridge and trade the gift across at the Cable Club,
 exactly like a normal player-to-player trade.
 
+<p align="center">
+  <img src="docs/screenshots/title.png" width="47%"
+       alt="Title screen: the Pokemon logo above the words DISTRIBUTION ROM, with Mew standing next to the player">
+  <img src="docs/screenshots/menu.png" width="47%"
+       alt="The gift menu: a scrolling list of French Pokemon names with Mew selected, its sprite, Pokedex number 151 and PSY type beside it, and NIVEAU: 50 below">
+</p>
+
 ## How it works
 
 This is a **fork of the French [pokered][pokered-fr] disassembly**, not a
@@ -42,7 +49,7 @@ ID number as its OT.
 | --- | --- |
 | Up / Down | ±1 |
 | Left / Right | ±10 |
-| A | Confirm and go to the Pokémon Center |
+| A | Confirm and build the gift |
 | B | Back to the list |
 
 **Anywhere**
@@ -50,6 +57,16 @@ ID number as its OT.
 | Button | Action |
 | --- | --- |
 | Start + Select (held ~½ s) | Return to the gift menu |
+
+Start on the list opens a three-digit jump, so reaching #151 never means
+paging through the other 150:
+
+<p align="center">
+  <img src="docs/screenshots/jump.png" width="47%"
+       alt="The jump prompt: a box reading No [1] 5 1, with the first digit bracketed">
+  <img src="docs/screenshots/level.png" width="47%"
+       alt="The level screen: NIVEAU: 50 under the list, with the hints HAUT/BAS:1 G/D:10 and A: OK B: RETOUR">
+</p>
 
 Start + Select is the operator's reset between visitors — no power cycle, and
 the settings survive it. It deliberately **refuses to fire during a link
@@ -63,6 +80,11 @@ every gift is stamped with, using the game's own naming screen; it defaults to
 field shows. Both the name and the chosen level persist across
 Start + Select, because one event usually means handing out one level under
 one OT.
+
+<p align="center">
+  <img src="docs/screenshots/settings.png" width="47%"
+       alt="The settings screen: REGLAGES, with the single row NOM: OneSear and the hints A: MODIFIER and B: RETOUR">
+</p>
 
 ## Building
 
@@ -86,8 +108,15 @@ set explicitly, since the removed intro was what used to do it).
 
 1. Boot the cart. Press Start at the title.
 2. Set the OT name once, via Select, if you want something other than `OneSear`.
-3. Pick the Pokémon and the level, press A. The screen says `PRET A ECHANGER!`
-   and you are standing in a Pokémon Center in front of the link receptionist.
+3. Pick the Pokémon and the level, press A. The screen says `PRET A ECHANGER!`;
+   press A again and you are standing in a Pokémon Center, in front of the link
+   receptionist.
+
+   <p align="center">
+     <img src="docs/screenshots/ready.png" width="47%"
+          alt="The ready screen: a box reading PRET A ECHANGER! / PARLEZ A LA DAME / START+SELECT: MENU over the selected Mew">
+   </p>
+
 4. Link the two Game Boys, have the visitor go to any Pokémon Center's Cable
    Club, and talk to the lady on both ends. Trade as normal.
 5. Press Start + Select to come back for the next visitor.
@@ -117,6 +146,10 @@ Verified headlessly in [PyBoy][pyboy], on both DMG and CGB: every one of the
 jump-to-number clamping, party bytes against the real Gen 1 stat formula, the
 OT name round trip, and nine consecutive Start + Select returns with no stack
 growth.
+
+The screenshots above are captured headlessly from the SameBoy core, in DMG
+mode, by [`docs/capture_screenshots.py`](docs/capture_screenshots.py) — run it
+after `make` to regenerate them.
 
 **Not yet verified: the actual two-Game-Boy link trade.** PyBoy cannot emulate
 a link cable, so this needs either two SameBoy instances (Connect menu) or, as
