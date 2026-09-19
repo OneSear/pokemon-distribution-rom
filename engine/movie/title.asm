@@ -39,16 +39,10 @@ DisplayTitleScreen:
 	call ClearScreen
 	call DisableLCD
 	call LoadFontTilePatterns
-	ld hl, NintendoCopyrightLogoGraphics
-	ld de, vTitleLogo2 tile 16
-	ld bc, 5 tiles
-	ld a, BANK(NintendoCopyrightLogoGraphics)
-	call FarCopyData2
-	ld hl, GameFreakLogoGraphics
-	ld de, vTitleLogo2 tile (16 + 5)
-	ld bc, 10 tiles
-	ld a, BANK(GameFreakLogoGraphics)
-	call FarCopyData2
+	; Distribution ROM: the Nintendo and GAME FREAK strips used to be loaded
+	; here, into vTitleLogo2 tiles 16-30 (tile ids $41-$4F). Nothing referenced
+	; them but the copyright row at the bottom of the screen, and that row is
+	; gone, so nothing is loaded there at all now.
 	ld hl, PokemonLogoGraphics
 	ld de, vTitleLogo
 	ld bc, $60 tiles
@@ -59,10 +53,10 @@ DisplayTitleScreen:
 	ld bc, $10 tiles
 	ld a, BANK(PokemonLogoGraphics)
 	call FarCopyData2          ; second chunk
-	ld hl, Version_GFX
-	ld de, vChars2 tile $60 + (10 tiles - (Version_GFXEnd - Version_GFX) * 2) / 2
-	ld bc, Version_GFXEnd - Version_GFX
-	ld a, BANK(Version_GFX)
+	ld hl, DistributionBanner
+	ld de, vChars2 tile $60
+	ld bc, DistributionBannerEnd - DistributionBanner
+	ld a, BANK(DistributionBanner)
 	call FarCopyDataDouble
 	call ClearBothBGMaps
 
@@ -101,33 +95,18 @@ DisplayTitleScreen:
 	ld a, $74
 	ld [hl], a
 
-; place tiles for title screen copyright
-	hlcoord 2, 17
-	ld de, .tileScreenCopyrightTiles
-	ld b, $10
-.tileScreenCopyrightTilesLoop
-	ld a, [de]
-	ld [hli], a
-	inc de
-	dec b
-	jr nz, .tileScreenCopyrightTilesLoop
-
-	jr .next
-
-.tileScreenCopyrightTiles
-	db $41,$42,$43,$44,$42,$43,$4f,$46,$47,$48,$49,$4A,$4B,$4C,$4D,$4E ; ©1995-1999 GAME FREAK inc.
-
-.next
+	; The copyright row used to be placed here, at row 17. ClearScreen has
+	; already blanked the tilemap, so leaving it out leaves the row empty.
+	call PrintGameVersionOnTitleScreen ; bake "DISTRIBUTION ROM" into the title
 	call SaveScreenTilesToBuffer2
 	call LoadScreenTilesFromBuffer2
 	call EnableLCD
 
-IF DEF(_RED)
-	ld a, STARTER1 ; which Pokemon to show first on the title screen
-ENDC
-IF DEF(_BLUE)
-	ld a, STARTER2 ; which Pokemon to show first on the title screen
-ENDC
+	; Distribution ROM: the title mon is pinned to Mew instead of the version's
+	; starter, and the random cycling below is gone, so this is the only mon the
+	; title screen ever shows. Its cry is what plays when the operator presses
+	; Start, since .finishedWaiting reads wTitleMonSpecies.
+	ld a, MEW
 	ld [wTitleMonSpecies], a
 	call LoadTitleMonSprite
 
@@ -222,18 +201,14 @@ ENDC
 	xor a
 	ld [wUnusedFlag], a
 
-; Keep scrolling in new mons indefinitely until the user performs input.
+; The mon is pinned, so there is nothing to scroll out and swap: just hold the
+; screen until the operator presses a button. hWY is still SCREEN_HEIGHT_PX from
+; the version scroll above, which is the state the mon is already drawn in, and
+; .finishedWaiting resets it itself.
 .awaitUserInterruptionLoop
 	ld c, 200
 	call CheckForUserInterruption
-	jr c, .finishedWaiting
-	call TitleScreenScrollInMon
-	ld c, 1
-	call CheckForUserInterruption
-	jr c, .finishedWaiting
-	farcall TitleScreenAnimateBallIfStarterOut
-	call TitleScreenPickNewMon
-	jr .awaitUserInterruptionLoop
+	jr nc, .awaitUserInterruptionLoop
 
 .finishedWaiting
 	ld a, [wTitleMonSpecies]
@@ -262,7 +237,7 @@ IF DEF(_DEBUG)
 	bit B_PAD_SELECT, a
 	jp nz, DebugMenu
 ENDC
-	jp MainMenu
+	jpfar DistributionMain ; Distribution ROM: Start goes to the gift menu
 
 .doClearSaveDialogue
 	farjp DoClearSaveDialogue
@@ -396,13 +371,12 @@ INCLUDE "data/pokemon/title_mons.asm"
 
 ; prints version text (red, blue)
 PrintGameVersionOnTitleScreen:
-	hlcoord 6, 8
+	hlcoord 2, 8
 	ld de, VersionOnTitleScreenText
 	jp PlaceString
 
-; these point to special tiles specifically loaded for that purpose and are not usual text
 VersionOnTitleScreenText:
-db $60,$61,$62,$63,$64,$65,$66,$67,$68,$69,"@" ; "Version Rouge" or "Version Bleue"
+	db $60,$61,$62,$63,$64,$65,$66,$67,$68,$69,$6a,$6b,$6c,$6d,$6e,$6f,"@"
 
 DebugNewGamePlayerName:
 	db "NINTEN@"
