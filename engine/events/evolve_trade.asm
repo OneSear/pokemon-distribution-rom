@@ -7,14 +7,14 @@ InGameTrade_CheckForTradeEvo:
 ; The final release replaced Graveler and Haunter in TradeMons.
 	;ld a, [wInGameTradeReceiveMonName]
 
-	;cp "G" ; GRAVELER
+	;cp 'G' ; GRAVELER
 	;jr z, .nameMatched
 
 	; "SPECTRE" (HAUNTER)
-	;cp "S"
+	;cp 'S'
 	;ret nz
 	;ld a, [wInGameTradeReceiveMonName + 1]
-	;cp "P"
+	;cp 'P'
 	;ret nz
 	ret
 

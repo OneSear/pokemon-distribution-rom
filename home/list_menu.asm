@@ -65,8 +65,8 @@ DisplayListMenuIDLoop::
 	ld a, [wBattleType]
 	and a ; is it the Old Man battle?
 	jr z, .notOldManBattle
-.oldManBattle
-	ld a, "▶"
+; Old Man battle
+	ld a, '▶'
 	ldcoord_a 5, 4 ; place menu cursor in front of first menu entry
 	ld c, 80
 	call DelayFrames
@@ -178,7 +178,7 @@ DisplayListMenuIDLoop::
 	bit B_PAD_DOWN, b
 	ld hl, wListScrollOffset
 	jr z, .upPressed
-.downPressed
+; Down pressed
 	ld a, [hl]
 	add 3
 	ld b, a
@@ -212,7 +212,7 @@ DisplayChooseQuantityMenu::
 	ld a, [wListMenuID]
 	cp PRICEDITEMLISTMENU
 	jr nz, .printInitialQuantity
-	ld a,"¥"
+	ld a,'¥'
 	ld [wTileMap + 218],a
 	hlcoord 8, 10
 .printInitialQuantity
@@ -382,7 +382,7 @@ PrintListMenuEntries::
 	jr z, .pokemonPCMenu
 	cp MOVESLISTMENU
 	jr z, .movesMenu
-.itemMenu
+; item menu
 	call GetItemName
 	jr .placeNameString
 .pokemonPCMenu
@@ -413,7 +413,7 @@ PrintListMenuEntries::
 	ld a, [wPrintItemPrices]
 	and a ; should prices be printed?
 	jr z, .skipPrintingItemPrice
-.printItemPrice
+; print item price
 	push hl
 	ld a, [de]
 	ld de, ItemPrices
@@ -424,12 +424,12 @@ PrintListMenuEntries::
 	add hl, bc
 	ld c, 3 | LEADING_ZEROES
 	call PrintBCDNumber
-	ld [hl], "¥"
+	ld [hl], '¥'
 .skipPrintingItemPrice
 	ld a, [wListMenuID]
 	and a ; PCPOKEMONLISTMENU?
 	jr nz, .skipPrintingPokemonLevel
-.printPokemonLevel
+; print Pokemon level
 	ld a, [wNamedObjectIndex]
 	push af
 	push hl
@@ -454,12 +454,12 @@ PrintListMenuEntries::
 	ld a, [wMonDataLocation]
 	and a ; is it a list of party pokemon or box pokemon?
 	jr z, .skipCopyingLevel
-.copyLevel
+; copy level
 	ld a, [wLoadedMonBoxLevel]
 	ld [wLoadedMonLevel], a
 .skipCopyingLevel
 	pop hl
-	ld bc, $1c
+	ld bc, SCREEN_WIDTH + 8 ; 1 row down and 8 columns right
 	add hl, bc
 	call PrintLevel
 	pop af
@@ -471,7 +471,7 @@ PrintListMenuEntries::
 	ld a, [wListMenuID]
 	cp ITEMLISTMENU
 	jr nz, .nextListEntry
-.printItemQuantity
+; print item quantity
 	ld a, [wNamedObjectIndex]
 	ld [wCurItem], a
 	call IsKeyItem ; check if item is unsellable
@@ -481,7 +481,7 @@ PrintListMenuEntries::
 	push hl
 	ld bc, SCREEN_WIDTH + 8 ; 1 row down and 8 columns right
 	add hl, bc
-	ld a, "×"
+	ld a, '×'
 	ld [hli], a
 	ld a, [wNamedObjectIndex]
 	push af
@@ -509,7 +509,7 @@ PrintListMenuEntries::
 	cp c ; is it this item?
 	jr nz, .nextListEntry
 	dec hl
-	ld a, "▷"
+	ld a, '▷'
 	ld [hli], a
 .nextListEntry
 	ld bc, 2 * SCREEN_WIDTH ; 2 rows
@@ -520,7 +520,7 @@ PrintListMenuEntries::
 	jp nz, .loop
 	ld bc, -8
 	add hl, bc
-	ld a, "▼"
+	ld a, '▼'
 	ld [hl], a
 	ret
 .printCancelMenuItem

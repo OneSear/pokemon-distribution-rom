@@ -65,7 +65,7 @@ kept when you press Start + Select.
 
 ## Build
 
-You need [rgbds](https://rgbds.gbdev.io/) 0.9.3 or newer. See
+You need [rgbds](https://rgbds.gbdev.io/) 1.0.0 or newer. See
 [INSTALL.md](INSTALL.md) for setup.
 
 ```sh

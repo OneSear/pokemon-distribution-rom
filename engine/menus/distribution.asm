@@ -498,7 +498,7 @@ DistDrawList:
 	; string terminator, so PlaceString stops early on the shorter ones and
 	; scrolling would otherwise leave the tail of a longer name behind
 	; (SULFURA over FLORIZARRE printing as "SULFURARRE").
-	ld a, " "
+	ld a, ' '
 	ld d, 11
 .clearLoop
 	ld [hli], a
@@ -509,9 +509,9 @@ DistDrawList:
 	; cursor marker, in the column to the left of the name
 	ld a, [wDistMonCursor]
 	cp b
-	ld a, " "
+	ld a, ' '
 	jr nz, .noCursor
-	ld a, "▶"
+	ld a, '▶'
 .noCursor
 	ld [hli], a ; hl now points at the name column
 	; this row's species name
@@ -560,18 +560,18 @@ DistDrawDexNo:
 	; "№" ($74) would be nicer, but that glyph only exists in the tileset
 	; LoadPokedexTilePatterns installs; under our font that tile is a middle
 	; dot, so it printed as "·025". Spell it out instead.
-	ld a, "N"
+	ld a, 'N'
 	ldcoord_a DIST_DEXNO_X, DIST_DEXNO_Y
-	ld a, "o"
+	ld a, 'o'
 	ldcoord_a DIST_DEXNO_X + 1, DIST_DEXNO_Y
 	ld a, d ; leading zeros, the way the Pokédex itself numbers them
-	add "0"
+	add '0'
 	ldcoord_a DIST_DEXNO_X + 2, DIST_DEXNO_Y
 	ld a, e
-	add "0"
+	add '0'
 	ldcoord_a DIST_DEXNO_X + 3, DIST_DEXNO_Y
 	pop af
-	add "0"
+	add '0'
 	ldcoord_a DIST_DEXNO_X + 4, DIST_DEXNO_Y
 	; fallthrough
 
@@ -582,7 +582,7 @@ DistDrawDexNo:
 DistDrawTypes:
 	hlcoord DIST_TYPE_X, DIST_TYPE_Y ; clear both rows: names vary in length
 	ld b, 2
-	ld a, " "
+	ld a, ' '
 .blankRow
 	push hl
 	ld c, 7
@@ -687,24 +687,24 @@ DistPrint3Digits:
 	ld a, d
 	and a
 	jr nz, .hDigit
-	ld a, " "
+	ld a, ' '
 	jr .hPlace
 .hDigit
-	add "0"
+	add '0'
 .hPlace
 	ld [hli], a
 	ld a, d
 	or e
 	jr nz, .tDigit
-	ld a, " "
+	ld a, ' '
 	jr .tPlace
 .tDigit
 	ld a, e
-	add "0"
+	add '0'
 .tPlace
 	ld [hli], a
 	pop af
-	add "0"
+	add '0'
 	ld [hl], a
 	ret
 
@@ -875,9 +875,9 @@ DistDrawJumpDigits:
 .loop
 	ld a, [wDistJumpPos]
 	cp b
-	ld a, " "
+	ld a, ' '
 	jr nz, .noOpen
-	ld a, "["
+	ld a, '['
 .noOpen
 	ld [hli], a
 	push hl
@@ -887,13 +887,13 @@ DistDrawJumpDigits:
 	add hl, de
 	ld a, [hl]
 	pop hl
-	add "0"
+	add '0'
 	ld [hli], a
 	ld a, [wDistJumpPos]
 	cp b
-	ld a, " "
+	ld a, ' '
 	jr nz, .noClose
-	ld a, "]"
+	ld a, ']'
 .noClose
 	ld [hli], a
 	inc b
@@ -908,7 +908,7 @@ DistDrawJumpDigits:
 DistBlankHints:
 	hlcoord 0, DIST_HINT_Y
 	ld b, 2 * SCREEN_WIDTH ; only two rows now -- 4 would run off the tilemap
-	ld a, " "
+	ld a, ' '
 .loop
 	ld [hli], a
 	dec b
@@ -1041,9 +1041,9 @@ DistDrawSetCursor:
 .loop
 	ld a, [wDistSetCursor]
 	cp b
-	ld a, " "
+	ld a, ' '
 	jr nz, .noCursor
-	ld a, "▶"
+	ld a, '▶'
 .noCursor
 	ld [hl], a
 	ld de, SCREEN_WIDTH
@@ -1068,7 +1068,7 @@ DistEditPlayerName:
 	; on the way out it reloads the text box tiles but not the font
 	call LoadFontTilePatterns
 	ld a, [wStringBuffer]
-	cp "@"
+	cp '@'
 	ret z ; submitted an empty name: keep the current one
 	ld hl, wStringBuffer
 	ld de, wDistPlayerName
