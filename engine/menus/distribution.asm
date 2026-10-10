@@ -9,18 +9,22 @@ DEF DIST_LEVEL_DEFAULT EQU 50
 DEF DIST_SPRITE_X      EQU 13
 DEF DIST_SPRITE_Y      EQU 2
 DEF DIST_LIST_Y        EQU 2  ; screen row of the first visible list entry
-DEF DIST_TYPE_X        EQU 13 ; types, stacked under the Pokédex number
+DEF DIST_TYPE_X        EQU 13 ; types, centred in the strip under the number
 DEF DIST_TYPE_Y        EQU 10
-DEF DIST_LEVEL_Y       EQU 13 ; screen row of the "NIVEAU:" line
-DEF DIST_HINT_Y        EQU 16 ; first of the two control-hint rows
+DEF DIST_LEVEL_X       EQU 14 ; "Lv 50", under the types
+DEF DIST_LEVEL_Y       EQU 12
+DEF DIST_HINT_BOX_Y    EQU 13 ; top border of the control-hint box
+DEF DIST_HINT_Y        EQU 14 ; first of its three rows
+DEF DIST_SET_HINT_Y    EQU 16 ; the settings screen's two unboxed hint rows
+DEF DIST_UP_ARROW      EQU $e9 ; font slot DistLoadUpArrow draws ▲ into
 DEF DIST_SPRITE_DELAY  EQU 8  ; idle frames before the preview catches up
 DEF DIST_NUM_SETTINGS  EQU 2  ; rows on the settings screen
 DEF DIST_SET_Y         EQU 3  ; screen row of the first settings row
 DEF DIST_SET_VALUE_X   EQU 11 ; column the settings values start in, in French;
                               ; one more in English (see DistSetValueCoord)
 DEF DIST_LANG_Y        EQU 7  ; first row of the language choice
-DEF DIST_DEXNO_X       EQU 13 ; Pokédex number, captioned under the sprite,
-                              ; left-aligned with the type rows beneath it
+DEF DIST_DEXNO_X       EQU 14 ; Pokédex number, captioned under the sprite,
+                              ; one column clear of the list's border
 DEF DIST_DEXNO_Y       EQU 9
 DEF DIST_JUMP_Y        EQU 14 ; interior row of the "jump to a number" prompt
 
@@ -225,8 +229,21 @@ DistScreenSetup:
 	call RunDefaultPaletteCommand
 	call LoadTextBoxTilePatterns
 	call LoadFontTilePatterns
+	call DistLoadUpArrow
 	farcall InitOptions
 	ret
+
+; The font has ▼ but no ▲, and the list wants both to show it scrolls. Draw ▲
+; into an unused font slot (a small katakana nothing prints); it has to be
+; redone after anything that reloads the font.
+DistLoadUpArrow:
+	ld de, DistUpArrowGFX
+	ld hl, vFont tile (DIST_UP_ARROW - $80)
+	lb bc, BANK(DistUpArrowGFX), 1
+	jp CopyVideoDataDouble
+
+DistUpArrowGFX: ; the font's ▼ ($ee), upside down
+	db $00, $00, $10, $38, $7c, $fe, $fe, $00
 
 ; --- Language (the screen right after the title) -------------------------
 ; Two rows, English first. wDistLanguage is read by the engine as well, so this
@@ -297,24 +314,9 @@ DistDrawSelectScreen:
 	call TextBoxBorder
 	; the names themselves are drawn by DistDrawList, which redraws them
 	; whenever the window scrolls
-	hlcoord 1, DIST_LEVEL_Y
-	ld de, DistNivStr
-	call DistLangString
-	call PlaceString
-	; row 15 is deliberately left blank: it separates the mon's details from
-	; the control hints, and the OT is already on the settings screen and in
-	; the pre-trade recap, which is where it actually matters
-	; Two hint rows, not four: "up/down moves" and "left/right pages" are
-	; self-evident, and the rows they used to occupy are worth more as list
-	; entries. Ten visible rows means 16 pages instead of 22.
-	hlcoord 1, DIST_HINT_Y
-	ld de, DistHintPickA ; no B here: B does nothing while choosing the mon
-	call DistLangString
-	call PlaceString
-	hlcoord 1, DIST_HINT_Y + 1
-	ld de, DistHintSelect
-	call DistLangString
-	call PlaceString
+	; the level is drawn by DistDrawLevel, in the strip beside the list
+	ld de, DistHintsPick ; no B here: B does nothing while choosing the mon
+	call DistDrawHintBox
 	ld a, 1
 	ldh [hAutoBGTransferEnabled], a
 	ld c, 6
@@ -452,16 +454,21 @@ DistChooseMon:
 ; --- Choose level --------------------------------------------------------
 
 DistChooseLevel:
-	; Both replacement strings are padded to at least the width of what they
-	; overwrite, so no tail of the mon-screen hints survives.
-	hlcoord 1, DIST_HINT_Y
-	ld de, DistHintLevel
-	call DistLangString
-	call PlaceString
-	hlcoord 1, DIST_HINT_Y + 1
-	ld de, DistHintOkB
-	call DistLangString
-	call PlaceString
+	ld de, DistHintsLevel
+	call DistDrawHintBox
+	; The level gets the cursor, and the chosen mon keeps a hollow one, the
+	; way the game's own submenus mark where they came from. Backing out
+	; redraws the whole screen, so neither needs undoing here.
+	ld a, '▶'
+	ldcoord_a DIST_LEVEL_X - 1, DIST_LEVEL_Y
+	ld a, [wDistScrollTop]
+	ld b, a
+	ld a, [wDistMonCursor]
+	sub b ; its row inside the window
+	hlcoord 1, DIST_LIST_Y
+	ld bc, SCREEN_WIDTH
+	call AddNTimes
+	ld [hl], '▷'
 	xor a ; hold a direction to ramp the level, same repeat as the mon list
 	ldh [hJoy6], a
 	ld a, 1
@@ -600,6 +607,22 @@ DistDrawList:
 	inc b
 	dec c
 	jr nz, .rowLoop
+	; ▲ and ▼ on the box's border while there are entries above or below the
+	; window. Nothing else shows that the list scrolls.
+	ld a, [wDistScrollTop]
+	and a
+	ld a, '─'
+	jr z, .noUpArrow
+	ld a, DIST_UP_ARROW
+.noUpArrow
+	ldcoord_a 11, DIST_LIST_Y - 1
+	ld a, [wDistScrollTop]
+	cp DIST_NUM_MONS - DIST_VISIBLE_MONS
+	ld a, '─'
+	jr nc, .noDownArrow
+	ld a, '▼'
+.noDownArrow
+	ldcoord_a 11, DIST_LIST_Y + DIST_VISIBLE_MONS
 	; fallthrough: the number belongs to whatever the cursor is on, so it is
 	; drawn with the list rather than with the pic, which lags behind on purpose
 
@@ -632,15 +655,17 @@ DistDrawDexNo:
 	ldcoord_a DIST_DEXNO_X, DIST_DEXNO_Y
 	ld a, 'o'
 	ldcoord_a DIST_DEXNO_X + 1, DIST_DEXNO_Y
+	ld a, '.'
+	ldcoord_a DIST_DEXNO_X + 2, DIST_DEXNO_Y
 	ld a, d ; leading zeros, the way the Pokédex itself numbers them
 	add '0'
-	ldcoord_a DIST_DEXNO_X + 2, DIST_DEXNO_Y
+	ldcoord_a DIST_DEXNO_X + 3, DIST_DEXNO_Y
 	ld a, e
 	add '0'
-	ldcoord_a DIST_DEXNO_X + 3, DIST_DEXNO_Y
+	ldcoord_a DIST_DEXNO_X + 4, DIST_DEXNO_Y
 	pop af
 	add '0'
-	ldcoord_a DIST_DEXNO_X + 4, DIST_DEXNO_Y
+	ldcoord_a DIST_DEXNO_X + 5, DIST_DEXNO_Y
 	; fallthrough
 
 ; Types, stacked under the Pokédex number in the 7-column strip beside the pic.
@@ -670,7 +695,7 @@ DistDrawTypes:
 	ld a, [wMonHType1]
 	call DistTypeString
 	hlcoord DIST_TYPE_X, DIST_TYPE_Y
-	call PlaceString
+	call DistPlaceCentered
 	ld a, [wMonHType1]
 	ld b, a
 	ld a, [wMonHType2]
@@ -678,6 +703,27 @@ DistDrawTypes:
 	ret z ; the engine stores both types the same for single-type mons
 	call DistTypeString
 	hlcoord DIST_TYPE_X, DIST_TYPE_Y + 1
+	jp DistPlaceCentered
+
+; de = string of at most 7 tiles, hl = left end of the 7-tile strip beside the
+; pic. Centres it, rounding right, so a 6-letter name still keeps a column of
+; space from the list's border.
+DistPlaceCentered:
+	push de
+	ld b, 8
+.count
+	ld a, [de]
+	inc de
+	cp '@'
+	jr z, .counted
+	dec b
+	jr .count
+.counted
+	srl b ; (8 - length) / 2
+	ld c, b
+	ld b, 0
+	add hl, bc
+	pop de
 	jp PlaceString
 
 ; a = type id -> de = its name. The table is in this bank, so PlaceString can
@@ -726,10 +772,14 @@ DistDrawSprite:
 	call LoadFrontSpriteByMonIndex
 	ret
 
-; Level, right-aligned in the three tiles after the "NIVEAU:" label.
+; "Lv 50" ("N. 50" in French) in the strip beside the list, under the types.
 DistDrawLevel:
+	hlcoord DIST_LEVEL_X, DIST_LEVEL_Y
+	ld de, DistLevelStr
+	call DistLangString
+	call PlaceString
 	ld a, [wDistLevel]
-	hlcoord 8, DIST_LEVEL_Y
+	hlcoord DIST_LEVEL_X + 2, DIST_LEVEL_Y
 	; fallthrough
 
 ; a = value, hl = destination. Three digits, blank-padded rather than
@@ -913,24 +963,15 @@ DistJumpDigitPtr:
 	add hl, de
 	ret
 
+; The prompt takes over the hint box: the number on its first row, its own
+; two hints below.
 DistDrawJump:
 	xor a
 	ldh [hAutoBGTransferEnabled], a ; pause transfer during bulk draw
-	hlcoord 0, DIST_JUMP_Y - 1
-	ld b, 1
-	ld c, 18
-	call TextBoxBorder
+	ld de, DistHintsJump
+	call DistDrawHintBox
 	hlcoord 2, DIST_JUMP_Y
 	ld de, DistJumpLabel
-	call DistLangString
-	call PlaceString
-	call DistBlankHints
-	hlcoord 1, DIST_HINT_Y
-	ld de, DistJumpHint1
-	call DistLangString
-	call PlaceString
-	hlcoord 1, DIST_HINT_Y + 1
-	ld de, DistJumpHint2
 	call DistLangString
 	call PlaceString
 	ld a, 1
@@ -941,7 +982,7 @@ DistDrawJump:
 ; are blank unless that digit is the one being edited, so the field never
 ; changes width and never needs clearing.
 DistDrawJumpDigits:
-	hlcoord 5, DIST_JUMP_Y
+	hlcoord 6, DIST_JUMP_Y
 	ld b, 0
 .loop
 	ld a, [wDistJumpPos]
@@ -973,17 +1014,41 @@ DistDrawJumpDigits:
 	jr nz, .loop
 	ret
 
-; Wipe both hint rows. Easier to reason about than padding every
-; replacement string out to the width of whatever it covers, which is how the
-; level screen does it and which has bitten us before.
-DistBlankHints:
-	hlcoord 0, DIST_HINT_Y
-	ld b, 2 * SCREEN_WIDTH ; only two rows now -- 4 would run off the tilemap
-	ld a, ' '
-.loop
-	ld [hli], a
+; de = three hint lines, each French then English. Draws the box at the bottom
+; of the screen and the lines in it; TextBoxBorder blanks the inside first, so
+; whatever hints were there before never need clearing or padding over.
+DistDrawHintBox:
+	push de
+	hlcoord 0, DIST_HINT_BOX_Y
+	ld b, 3
+	ld c, 18
+	call TextBoxBorder
+	pop de
+	hlcoord 1, DIST_HINT_Y
+	ld b, 3
+.line
+	push bc
+	push hl
+	push de
+	call DistLangString
+	call PlaceString
+	pop de
+	call DistSkipString ; past the French
+	call DistSkipString ; and the English
+	pop hl
+	ld bc, SCREEN_WIDTH
+	add hl, bc
+	pop bc
 	dec b
-	jr nz, .loop
+	jr nz, .line
+	ret
+
+; Step de past the next "@".
+DistSkipString:
+	ld a, [de]
+	inc de
+	cp '@'
+	jr nz, DistSkipString
 	ret
 
 ; --- Return to the menu without a power cycle ----------------------------
@@ -1110,11 +1175,11 @@ DistDrawSettings:
 	ld de, DistSetLangValueStr
 	call DistLangString
 	call PlaceString
-	hlcoord 1, DIST_HINT_Y
+	hlcoord 1, DIST_SET_HINT_Y
 	ld de, DistSetHintA
 	call DistLangString
 	call PlaceString
-	hlcoord 1, DIST_HINT_Y + 1
+	hlcoord 1, DIST_SET_HINT_Y + 1
 	ld de, DistSetHintB
 	call DistLangString
 	call PlaceString
@@ -1167,6 +1232,7 @@ DistEditPlayerName:
 	farcall DisplayNamingScreen
 	; on the way out it reloads the text box tiles but not the font
 	call LoadFontTilePatterns
+	call DistLoadUpArrow
 	ld a, [wStringBuffer]
 	cp '@'
 	ret z ; submitted an empty name: keep the current one
@@ -1291,13 +1357,22 @@ DistPCWarp:
 ; directly by the English one, which is the layout DistLangString expects.
 
 DistTitleStr:  db "DISTRIBUTION@" ; the same in both
-DistNivStr:    db "NIVEAU:@", "LEVEL:@"
-; Hint lines. The level screen overwrites both in place, so its strings are
-; padded to match the longer mon-screen ones they cover.
-DistHintPickA: db "A: CHOISIR START:No@", "A: CHOOSE START:No@"
-DistHintSelect: db "SELECT: REGLAGES@", "SELECT: SETTINGS@"
-DistHintLevel: db "HAUT/BAS:1 G/D:10  @", "UP/DOWN:1 L/R:10  @" ; cover DistHintPickA
-DistHintOkB:   db "A: OK   B: RETOUR@", "A: OK   B: BACK  @"   ; cover DistHintSelect
+DistLevelStr:  db "N.@", "Lv@"
+
+; Hint box contents for DistDrawHintBox: three lines, each French then
+; English, at most 18 tiles.
+DistHintsPick:
+	db "A: CHOISIR@",         "A: CHOOSE@"
+	db "START: ALLER AU No@", "START: GO TO No.@"
+	db "SELECT: REGLAGES@",   "SELECT: SETTINGS@"
+DistHintsLevel:
+	db "A: OK   B: RETOUR@",  "A: OK   B: BACK@"
+	db "HAUT/BAS: 1@",        "UP/DOWN: 1@"
+	db "GAUCHE/DROITE: 10@",  "LEFT/RIGHT: 10@"
+DistHintsJump: ; the first line is where the number goes
+	db "@",                   "@"
+	db "HAUT/BAS: CHIFFRE@",  "UP/DOWN: DIGIT@"
+	db "A: ALLER B: RETOUR@",  "A: GO  B: CANCEL@"
 DistReadyStr:  db "PRET A ECHANGER!@", "READY TO TRADE!@"
 DistReadyStr2: db "PARLEZ A LA DAME@", "TALK TO THE LADY@"
 DistReadyStr3: db "START+SELECT: MENU@", "START+SELECT: MENU@" ; the box's full 18 columns
@@ -1316,9 +1391,7 @@ DistSetHintA:        db "A: MODIFIER@", "A: CHANGE@"
 DistSetHintB:        db "B: RETOUR@", "B: BACK@"
 
 ; "jump to a number" prompt
-DistJumpLabel: db "No@", "No@"
-DistJumpHint1: db "HAUT/BAS: CHIFFRE@", "UP/DOWN: DIGIT@"
-DistJumpHint2: db "A: ALLER B: ANNULER@", "A: GO  B: CANCEL@"
+DistJumpLabel: db "No.@", "No.@"
 
 ; Type names, duplicated from data/types/names.asm on purpose: those live in
 ; bank $09 behind PrintMonType, whose two-row layout does not fit this screen.

@@ -11,7 +11,7 @@ cable. In English or French.
        alt="The menu: a list of Pokemon names with Mew selected, its sprite, number 151 and PSYCHIC type beside it">
   <br>
   <img src="docs/screenshots/level.png" width="42%"
-       alt="The level screen: LEVEL: 50 under the list">
+       alt="The level screen: Lv 50 beside the list, with its controls in a box below">
   <img src="docs/screenshots/ready.png" width="42%"
        alt="A box reading READY TO TRADE! / TALK TO THE LADY / START+SELECT: MENU">
 </p>
