@@ -8,12 +8,12 @@ level, then trade that Pokémon to a real cartridge over a link cable.
   <img src="docs/screenshots/title.png" width="42%"
        alt="Title screen: the Pokemon logo above the words DISTRIBUTION ROM, with Mew next to the player">
   <img src="docs/screenshots/menu.png" width="42%"
-       alt="The menu: a list of French Pokemon names with Mew selected, its sprite, number 151 and PSY type beside it">
+       alt="The menu: a list of Pokemon names with Mew selected, its sprite, number 151 and PSYCHIC type beside it">
   <br>
   <img src="docs/screenshots/level.png" width="42%"
-       alt="The level screen: NIVEAU: 50 under the list">
+       alt="The level screen: LEVEL: 50 under the list">
   <img src="docs/screenshots/ready.png" width="42%"
-       alt="A box reading PRET A ECHANGER! / PARLEZ A LA DAME / START+SELECT: MENU">
+       alt="A box reading READY TO TRADE! / TALK TO THE LADY / START+SELECT: MENU">
 </p>
 
 ## How it works
@@ -52,7 +52,7 @@ battle menus, the bag and item names, and the Pokédex.
 
 | Button | Action |
 | --- | --- |
-| Up / Down | Move one entry. Hold to repeat. Wraps, so Mew is one press up from Bulbizarre |
+| Up / Down | Move one entry. Hold to repeat. Wraps, so Mew is one press up from Bulbasaur |
 | Left / Right | Page by 10 |
 | Start | Jump to a Pokédex number |
 | Select | Settings |
@@ -78,9 +78,9 @@ nothing during a link session, so you cannot drop a trade halfway.
 
 ## Settings
 
-Press Select on the list. `NOM:` sets the OT name stamped on every gift. It
-defaults to `OneSear` and holds 7 characters. `LANGUE:` switches between French
-and English. The name, the language and the level are all kept when you press
+Press Select on the list. `NAME:` sets the OT name stamped on every gift. It
+defaults to `OneSear` and holds 7 characters. `LANGUAGE:` switches between
+English and French. The name, the language and the level are all kept when you press
 Start + Select.
 
 ## Build

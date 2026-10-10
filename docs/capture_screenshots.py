@@ -10,12 +10,14 @@ out of the core's framebuffer rather than off a screen.
 Point SAMEBOY_CORE at the core if it isn't where RetroArch puts it, build the
 ROM first, then:
 
-    python3 docs/capture_screenshots.py
+    python3 docs/capture_screenshots.py            # English, as in the README
+    python3 docs/capture_screenshots.py --french   # the same screens in French
 
 Stdlib only -- the PNG writer at the bottom is here so this needs no pip.
 """
 import ctypes as C
 import os
+import sys
 import struct
 import zlib
 
@@ -183,7 +185,7 @@ def save_png(frame, path, scale=3):
     return w * scale, h * scale
 
 
-def main():
+def main(french=False):
     wDistMonCursor, wDistLevel = 0xDEE7, 0xDEE8
     wPartyCount, wCurMap = 0xD168, 0xD363
     wTileMap = 0xC3A0
@@ -213,10 +215,13 @@ def main():
     emu.press(START)
     emu.wait(wTileMap + 4 * 20 + 2, 0x8b, label="language screen")
     emu.run(20)
+    if not french:
+        emu.press(UP)                  # the other row: ENGLISH
+        emu.run(20)
     shot("language")
 
-    # A keeps French and drops into the gift menu; DistributionMain writes the
-    # default level before it draws anything, so that is the "we are in" signal.
+    # A drops into the gift menu; DistributionMain writes the default level
+    # before it draws anything, so that is the "we are in" signal.
     emu.press(A)
     emu.wait(wDistLevel, 50, label="wDistLevel")
     emu.run(120)
@@ -265,4 +270,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(french="--french" in sys.argv[1:])
