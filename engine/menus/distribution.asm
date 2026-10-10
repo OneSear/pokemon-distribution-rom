@@ -14,8 +14,11 @@ DEF DIST_TYPE_Y        EQU 10
 DEF DIST_LEVEL_Y       EQU 13 ; screen row of the "NIVEAU:" line
 DEF DIST_HINT_Y        EQU 16 ; first of the two control-hint rows
 DEF DIST_SPRITE_DELAY  EQU 8  ; idle frames before the preview catches up
-DEF DIST_NUM_SETTINGS  EQU 1  ; rows on the settings screen
+DEF DIST_NUM_SETTINGS  EQU 2  ; rows on the settings screen
 DEF DIST_SET_Y         EQU 3  ; screen row of the first settings row
+DEF DIST_SET_VALUE_X   EQU 11 ; column the settings values start in, in French;
+                              ; one more in English (see DistSetValueCoord)
+DEF DIST_LANG_Y        EQU 7  ; first row of the language choice
 DEF DIST_DEXNO_X       EQU 13 ; Pokédex number, captioned under the sprite,
                               ; left-aligned with the type rows beneath it
 DEF DIST_DEXNO_Y       EQU 9
@@ -184,6 +187,8 @@ DistributionSpeciesList:
 ; DistributionMenu, so an operator's OT name survives between gifts -- that is
 ; the entire reason the Start+Select return exists instead of a plain reset.
 DistributionMain::
+	call DistScreenSetup
+	call DistChooseLanguage
 	ld hl, DistDefaultName ; seed the editable OT name
 	ld de, wDistPlayerName
 	ld bc, NAME_LENGTH
@@ -193,6 +198,21 @@ DistributionMain::
 
 ; Warm entry: everything below is per-gift state and is reset every time.
 DistributionMenu::
+	call DistScreenSetup
+	xor a
+	ld [wDistMonCursor], a
+	ld [wDistScrollTop], a
+	ld [wDistSetCursor], a
+.mainLoop
+	call DistDrawSelectScreen
+	call DistChooseMon    ; returns when the player presses A
+	call DistChooseLevel  ; returns carry set if the player backed out
+	jr c, .mainLoop
+	call DistributionBuildParty
+	call DistReadyScreen
+	jp DistributionEnterTrade ; warp into the Pokémon Center (does not return)
+
+DistScreenSetup:
 	call ClearScreen
 	; On a Super Game Boy the default palette command decides the colours, and
 	; it is SetPal_GameFreakIntro that normally seeds it with SET_PAL_GENERIC.
@@ -206,18 +226,61 @@ DistributionMenu::
 	call LoadTextBoxTilePatterns
 	call LoadFontTilePatterns
 	farcall InitOptions
+	ret
+
+; --- Language (the screen right after the title) -------------------------
+; Two rows, English first. wDistLanguage is read by the engine as well, so this
+; one byte switches the game's own text too: every far text through
+; DistFarTextLookup and the Pokémon names through GetMonName.
+
+DistChooseLanguage:
 	xor a
-	ld [wDistMonCursor], a
-	ld [wDistScrollTop], a
-	ld [wDistSetCursor], a
-.mainLoop
-	call DistDrawSelectScreen
-	call DistChooseMon    ; returns when the player presses A
-	call DistChooseLevel  ; returns carry set if the player backed out
-	jr c, .mainLoop
-	call DistributionBuildParty
-	call DistReadyScreen
-	jp DistributionEnterTrade ; warp into the Pokémon Center (does not return)
+	ldh [hAutoBGTransferEnabled], a ; pause transfer during bulk draw
+	call ClearScreen
+	hlcoord 2, DIST_LANG_Y - 3
+	ld de, DistLangTitleStr
+	call PlaceString
+	hlcoord 5, DIST_LANG_Y - 1
+	ld b, 2
+	ld c, 10
+	call TextBoxBorder
+	hlcoord 7, DIST_LANG_Y
+	ld de, DistLangEnglishStr
+	call PlaceString
+	hlcoord 7, DIST_LANG_Y + 1
+	ld de, DistLangFrenchStr
+	call PlaceString
+	ld a, 1
+	ldh [hAutoBGTransferEnabled], a
+	xor a ; single presses only
+	ldh [hJoy6], a
+	ldh [hJoy7], a
+.redraw
+	; row 0 is English and row 1 French, the reverse of the LANG_* values
+	ld a, [wDistLanguage]
+	and a
+	ld a, '▶'
+	ld b, ' '
+	jr nz, .drawCursor
+	ld a, ' '
+	ld b, '▶'
+.drawCursor
+	ldcoord_a 6, DIST_LANG_Y
+	ld a, b
+	ldcoord_a 6, DIST_LANG_Y + 1
+.loop
+	call DelayFrame
+	call JoypadLowSensitivity
+	ldh a, [hJoy5]
+	ld b, a
+	bit B_PAD_A, b
+	ret nz
+	and PAD_UP | PAD_DOWN
+	jr z, .loop
+	ld a, [wDistLanguage] ; two rows: up and down both move to the other one
+	xor 1
+	ld [wDistLanguage], a
+	jr .redraw
 
 ; --- Draw the static selection screen ------------------------------------
 
@@ -236,6 +299,7 @@ DistDrawSelectScreen:
 	; whenever the window scrolls
 	hlcoord 1, DIST_LEVEL_Y
 	ld de, DistNivStr
+	call DistLangString
 	call PlaceString
 	; row 15 is deliberately left blank: it separates the mon's details from
 	; the control hints, and the OT is already on the settings screen and in
@@ -245,9 +309,11 @@ DistDrawSelectScreen:
 	; entries. Ten visible rows means 16 pages instead of 22.
 	hlcoord 1, DIST_HINT_Y
 	ld de, DistHintPickA ; no B here: B does nothing while choosing the mon
+	call DistLangString
 	call PlaceString
 	hlcoord 1, DIST_HINT_Y + 1
 	ld de, DistHintSelect
+	call DistLangString
 	call PlaceString
 	ld a, 1
 	ldh [hAutoBGTransferEnabled], a
@@ -390,9 +456,11 @@ DistChooseLevel:
 	; overwrite, so no tail of the mon-screen hints survives.
 	hlcoord 1, DIST_HINT_Y
 	ld de, DistHintLevel
+	call DistLangString
 	call PlaceString
 	hlcoord 1, DIST_HINT_Y + 1
 	ld de, DistHintOkB
+	call DistLangString
 	call PlaceString
 	xor a ; hold a direction to ramp the level, same repeat as the mon list
 	ldh [hJoy6], a
@@ -628,7 +696,7 @@ DistTypeString:
 	ld a, [hli]
 	ld e, a
 	ld d, [hl]
-	ret
+	jp DistLangString
 
 ; Internal species index of the highlighted entry, in a.
 DistCurrentSpecies:
@@ -854,13 +922,16 @@ DistDrawJump:
 	call TextBoxBorder
 	hlcoord 2, DIST_JUMP_Y
 	ld de, DistJumpLabel
+	call DistLangString
 	call PlaceString
 	call DistBlankHints
 	hlcoord 1, DIST_HINT_Y
 	ld de, DistJumpHint1
+	call DistLangString
 	call PlaceString
 	hlcoord 1, DIST_HINT_Y + 1
 	ld de, DistJumpHint2
+	call DistLangString
 	call PlaceString
 	ld a, 1
 	ldh [hAutoBGTransferEnabled], a
@@ -999,9 +1070,14 @@ DistSettings:
 .chosen
 	ld a, [wDistSetCursor]
 	and a
-	jr nz, .loop ; no other rows yet
+	jr nz, .language
 	call DistEditPlayerName
 	jr .redraw   ; the naming screen owned the whole screen
+.language
+	ld a, [wDistLanguage] ; only two, so A flips between them
+	xor 1
+	ld [wDistLanguage], a
+	jr .redraw   ; every string on the screen changes with it
 .done
 	ret
 
@@ -1011,6 +1087,7 @@ DistDrawSettings:
 	call ClearScreen
 	hlcoord 6, 0
 	ld de, DistSetTitleStr
+	call DistLangString
 	call PlaceString
 	hlcoord 0, DIST_SET_Y - 1
 	ld b, DIST_NUM_SETTINGS
@@ -1018,21 +1095,44 @@ DistDrawSettings:
 	call TextBoxBorder
 	hlcoord 2, DIST_SET_Y
 	ld de, DistSetNameStr
+	call DistLangString
 	call PlaceString
-	hlcoord 7, DIST_SET_Y
+	hlcoord DIST_SET_VALUE_X, DIST_SET_Y
+	call DistSetValueCoord
 	ld de, wDistPlayerName ; the value, straight out of RAM
+	call PlaceString
+	hlcoord 2, DIST_SET_Y + 1
+	ld de, DistSetLangStr
+	call DistLangString
+	call PlaceString
+	hlcoord DIST_SET_VALUE_X, DIST_SET_Y + 1
+	call DistSetValueCoord
+	ld de, DistSetLangValueStr
+	call DistLangString
 	call PlaceString
 	hlcoord 1, DIST_HINT_Y
 	ld de, DistSetHintA
+	call DistLangString
 	call PlaceString
 	hlcoord 1, DIST_HINT_Y + 1
 	ld de, DistSetHintB
+	call DistLangString
 	call PlaceString
 	call DistDrawSetCursor
 	ld a, 1
 	ldh [hAutoBGTransferEnabled], a
 	ld c, 6
 	jp DelayFrames
+
+; "LANGUAGE:" is 9 tiles, so in English the values start a column later to
+; leave a gap after it. "FRANCAIS" is 8, which is why French cannot do the same:
+; it would run into the box's right border.
+DistSetValueCoord:
+	ld a, [wDistLanguage] ; LANG_FRENCH = 0, LANG_ENGLISH = 1
+	ld e, a
+	ld d, 0
+	add hl, de
+	ret
 
 DistDrawSetCursor:
 	hlcoord 1, DIST_SET_Y
@@ -1126,14 +1226,17 @@ DistReadyScreen:
 	call TextBoxBorder
 	hlcoord 1, 13
 	ld de, DistReadyStr
+	call DistLangString
 	call PlaceString
 	hlcoord 1, 14
 	ld de, DistReadyStr2
+	call DistLangString
 	call PlaceString
 	; row 15 stays as TextBoxBorder left it -- blank, separating the
 	; instruction from the operator-only shortcut below it
 	hlcoord 1, 16
 	ld de, DistReadyStr3 ; the operator is about to need this
+	call DistLangString
 	call PlaceString
 	ld a, 1
 	ldh [hAutoBGTransferEnabled], a
@@ -1184,28 +1287,38 @@ DistPCWarp:
 
 ; --- Strings & data ------------------------------------------------------
 
-DistTitleStr:  db "DISTRIBUTION@"
-DistNivStr:    db "NIVEAU:@"
+; Every string that changes with the language is the French one followed
+; directly by the English one, which is the layout DistLangString expects.
+
+DistTitleStr:  db "DISTRIBUTION@" ; the same in both
+DistNivStr:    db "NIVEAU:@", "LEVEL:@"
 ; Hint lines. The level screen overwrites both in place, so its strings are
 ; padded to match the longer mon-screen ones they cover.
-DistHintPickA: db "A: CHOISIR START:No@"
-DistHintSelect: db "SELECT: REGLAGES@"
-DistHintLevel: db "HAUT/BAS:1 G/D:10  @" ; padded out to cover DistHintPickA
-DistHintOkB:   db "A: OK   B: RETOUR@"
-DistReadyStr:  db "PRET A ECHANGER!@"
-DistReadyStr2: db "PARLEZ A LA DAME@"
-DistReadyStr3: db "START+SELECT: MENU@" ; exactly the 18-column box interior
+DistHintPickA: db "A: CHOISIR START:No@", "A: CHOOSE START:No@"
+DistHintSelect: db "SELECT: REGLAGES@", "SELECT: SETTINGS@"
+DistHintLevel: db "HAUT/BAS:1 G/D:10  @", "UP/DOWN:1 L/R:10  @" ; cover DistHintPickA
+DistHintOkB:   db "A: OK   B: RETOUR@", "A: OK   B: BACK  @"   ; cover DistHintSelect
+DistReadyStr:  db "PRET A ECHANGER!@", "READY TO TRADE!@"
+DistReadyStr2: db "PARLEZ A LA DAME@", "TALK TO THE LADY@"
+DistReadyStr3: db "START+SELECT: MENU@", "START+SELECT: MENU@" ; the box's full 18 columns
 
-; Settings screen
-DistSetTitleStr: db "REGLAGES@"
-DistSetNameStr:  db "NOM:@"
-DistSetHintA:    db "A: MODIFIER@"
-DistSetHintB:    db "B: RETOUR@"
+; Language screen. Both languages at once: nobody has chosen one yet.
+DistLangTitleStr:   db "LANGUAGE / LANGUE@"
+DistLangEnglishStr: db "ENGLISH@"
+DistLangFrenchStr:  db "FRANCAIS@"
+
+; Settings screen. Values start at DIST_SET_VALUE_X, so the labels fit in 9.
+DistSetTitleStr:     db "REGLAGES@", "SETTINGS@"
+DistSetNameStr:      db "NOM:@", "NAME:@"
+DistSetLangStr:      db "LANGUE:@", "LANGUAGE:@"
+DistSetLangValueStr: db "FRANCAIS@", "ENGLISH@"
+DistSetHintA:        db "A: MODIFIER@", "A: CHANGE@"
+DistSetHintB:        db "B: RETOUR@", "B: BACK@"
 
 ; "jump to a number" prompt
-DistJumpLabel: db "No@"
-DistJumpHint1: db "HAUT/BAS: CHIFFRE@"
-DistJumpHint2: db "A: ALLER B: ANNULER@"
+DistJumpLabel: db "No@", "No@"
+DistJumpHint1: db "HAUT/BAS: CHIFFRE@", "UP/DOWN: DIGIT@"
+DistJumpHint2: db "A: ALLER B: ANNULER@", "A: GO  B: CANCEL@"
 
 ; Type names, duplicated from data/types/names.asm on purpose: those live in
 ; bank $09 behind PrintMonType, whose two-row layout does not fit this screen.
@@ -1213,22 +1326,24 @@ DistJumpHint2: db "A: ALLER B: ANNULER@"
 DistTypeNames:
 	dw .normal, .combat, .vol, .poison, .sol, .roche, .oiseau, .insecte, .spectre
 	dw .feu, .eau, .plante, .electrik, .psy, .glace, .dragon
-.normal:   db "NORMAL@"
-.combat:   db "COMBAT@"
-.vol:      db "VOL@"
-.poison:   db "POISON@"
-.sol:      db "SOL@"
-.roche:    db "ROCHE@"
-.oiseau:   db "OISEAU@"
-.insecte:  db "INSECTE@"
-.spectre:  db "SPECTRE@"
-.feu:      db "FEU@"
-.eau:      db "EAU@"
-.plante:   db "PLANTE@"
-.electrik: db "ELECTR.@" ; the strip is 7 tiles wide and "ELECTRIK" is 8
-.psy:      db "PSY@"
-.glace:    db "GLACE@"
-.dragon:   db "DRAGON@"
+; French then English, for DistLangString. The strip beside the pic is 7 tiles
+; wide, so the 8-letter ones are cut short.
+.normal:   db "NORMAL@", "NORMAL@"
+.combat:   db "COMBAT@", "FIGHT.@"
+.vol:      db "VOL@", "FLYING@"
+.poison:   db "POISON@", "POISON@"
+.sol:      db "SOL@", "GROUND@"
+.roche:    db "ROCHE@", "ROCK@"
+.oiseau:   db "OISEAU@", "BIRD@"
+.insecte:  db "INSECTE@", "BUG@"
+.spectre:  db "SPECTRE@", "GHOST@"
+.feu:      db "FEU@", "FIRE@"
+.eau:      db "EAU@", "WATER@"
+.plante:   db "PLANTE@", "GRASS@"
+.electrik: db "ELECTR.@", "ELECTR.@"
+.psy:      db "PSY@", "PSYCHIC@"
+.glace:    db "GLACE@", "ICE@"
+.dragon:   db "DRAGON@", "DRAGON@"
 
 DistDefaultName: db "OneSear@"
 	ds NAME_LENGTH - 8

@@ -2283,3 +2283,7 @@ wDistPlayerName:: ds NAME_LENGTH
 ; broken test scripts once.
 wDistJumpDigits:: ds 3 ; hundreds, tens, ones
 wDistJumpPos:: db      ; which of the three is being edited (0-2)
+; LANG_FRENCH or LANG_ENGLISH, picked on the screen after the title. Read by the
+; engine too (TextCommand_FAR, GetMonName, DistLangString), so it lives outside
+; anything InitPlayerData2 clears and survives the whole session.
+wDistLanguage:: db

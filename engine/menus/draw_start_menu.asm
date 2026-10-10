@@ -32,13 +32,16 @@ DrawStartMenu::
 	jr z, .storeMenuItemCount
 ; case for having pokedex
 	ld de, StartMenuPokedexText
+	call DistLangString
 	call PrintStartMenuItem
 	ld a, $07
 .storeMenuItemCount
 	ld [wMaxMenuItem], a ; number of menu items
 	ld de, StartMenuPokemonText
+	call DistLangString
 	call PrintStartMenuItem
 	ld de, StartMenuItemText
+	call DistLangString
 	call PrintStartMenuItem
 	ld de, wPlayerName ; player's name
 	call PrintStartMenuItem
@@ -50,35 +53,39 @@ DrawStartMenu::
 ; case for using link feature
 	ld de, StartMenuResetText
 .printSaveOrResetText
+	call DistLangString
 	call PrintStartMenuItem
 	ld de, StartMenuOptionText
+	call DistLangString
 	call PrintStartMenuItem
 	ld de, StartMenuExitText
+	call DistLangString
 	call PlaceString
 	ld hl, wStatusFlags5
 	res BIT_NO_TEXT_DELAY, [hl]
 	ret
 
+; French, then English for DistLangString (distribution ROM language switch)
 StartMenuPokedexText:
-	db "#DEX@"
+	db "#DEX@", "POKéDEX@"
 
 StartMenuPokemonText:
-	db "#MON@"
+	db "#MON@", "POKéMON@"
 
 StartMenuItemText:
-	db "OBJET@"
+	db "OBJET@", "ITEM@"
 
 StartMenuSaveText:
-	db "SAUVER@"
+	db "SAUVER@", "SAVE@"
 
 StartMenuResetText:
-	db "QUITTER@"
+	db "QUITTER@", "RESET@"
 
 StartMenuExitText:
-	db "RETOUR@"
+	db "RETOUR@", "EXIT@"
 
 StartMenuOptionText:
-	db "OPTION@"
+	db "OPTION@", "OPTION@"
 
 PrintStartMenuItem:
 	push hl

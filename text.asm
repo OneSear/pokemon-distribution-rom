@@ -273,6 +273,11 @@ SECTION "Pokédex Text", ROMX
 INCLUDE "data/pokemon/dex_text.asm"
 
 
+INCLUDE "text_en.asm"
+
+
 SECTION "Move Names", ROMX
 
 INCLUDE "data/moves/names.asm"
+; Same section, so the same bank: GetName swaps only the pointer in English mode.
+INCLUDE "text_en/data/moves/names.asm"

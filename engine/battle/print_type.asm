@@ -47,6 +47,7 @@ PrintType_:
 	ld e, a
 	ld d, [hl]
 	pop hl
+	call DistLangString ; distribution ROM: French, then English
 	jp PlaceString
 
 INCLUDE "data/types/names.asm"

@@ -148,6 +148,7 @@ LinkMenu:
 	call UpdateSprites
 	hlcoord 7, 7
 	ld de, CableClubOptionsText
+	call DistLangString
 	call PlaceString
 	xor a
 	ld [wUnusedLinkMenuByte], a
@@ -350,9 +351,13 @@ NewGameText:
 	next "OPTIONS@"
 
 CableClubOptionsText:
+; French, then English for DistLangString (distribution ROM language switch)
 	db   "CENTRE TROC"
 	next "COLISEE"
 	next "RETOUR@"
+	db   "TRADE CENTER"
+	next "COLOSSEUM"
+	next "CANCEL@"
 
 DisplayContinueGameInfo:
 	xor a
@@ -363,6 +368,7 @@ DisplayContinueGameInfo:
 	call TextBoxBorder
 	hlcoord 5, 9
 	ld de, SaveScreenInfoText
+	call DistLangString
 	call PlaceString
 	hlcoord 12, 9
 	ld de, wPlayerName
@@ -389,6 +395,7 @@ PrintSaveScreenText:
 	call UpdateSprites
 	hlcoord 5, 2
 	ld de, SaveScreenInfoText
+	call DistLangString
 	call PlaceString
 	hlcoord 12, 2
 	ld de, wPlayerName
@@ -435,10 +442,16 @@ PrintPlayTime:
 	jp PrintNumber
 
 SaveScreenInfoText:
+; French, then English for DistLangString (distribution ROM language switch).
+; The English keeps the French padding, which is what this layout was set for.
 	db   "JOUEUR"
 	next "BADGES        "
 	next "#DEX       "
 	next "TEMPS@"
+	db   "PLAYER"
+	next "BADGES        "
+	next "#DEX       "
+	next "TIME@"
 
 DisplayOptionMenu:
 	hlcoord 0, 0

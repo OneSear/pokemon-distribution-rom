@@ -602,6 +602,14 @@ TextCommand_FAR::
 	ld d, a
 	ld a, [hli]
 
+	push bc ; bc is the text cursor
+	ld c, a
+	ld a, [wDistLanguage]
+	and a ; LANG_FRENCH
+	ld a, c
+	call nz, DistTranslateFarText ; swap in the English text, if there is one
+	pop bc
+
 	ldh [hLoadedROMBank], a
 	ld [rROMB], a
 
@@ -615,6 +623,28 @@ TextCommand_FAR::
 	ldh [hLoadedROMBank], a
 	ld [rROMB], a
 	jp NextTextCommand
+
+; c = bank, de = address of a far text -> a = bank, de = address of the text
+; to print in English mode. Leaves the lookup's bank loaded: TextCommand_FAR
+; loads the returned one straight after.
+DistTranslateFarText::
+	ld a, BANK(DistFarTextLookup)
+	ldh [hLoadedROMBank], a
+	ld [rROMB], a
+	jp DistFarTextLookup
+
+; de = a French string followed directly by its English twin. In English mode,
+; step de past the French one, so the caller prints the English.
+DistLangString::
+	ld a, [wDistLanguage]
+	and a ; LANG_FRENCH
+	ret z
+.skip
+	ld a, [de]
+	inc de
+	cp '@'
+	jr nz, .skip
+	ret
 
 TextCommandJumpTable::
 ; entries correspond to TX_* constants (see macros/scripts/text.asm)

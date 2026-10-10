@@ -67,6 +67,16 @@ GetName::
 	ld h, a
 	ldh a, [hSwapTemp + 1]
 	ld l, a
+	; distribution ROM: English move names in English mode. They share the
+	; French table's section, so the bank loaded above is already right.
+	ld a, [wDistLanguage]
+	and a ; LANG_FRENCH
+	jr z, .gotList
+	ld a, [wNameListType]
+	cp MOVE_NAME
+	jr nz, .gotList
+	ld hl, MoveNames_EN
+.gotList
 	ld a, [wNameListIndex]
 	ld b, a ; wanted entry
 	ld c, 0 ; entry counter

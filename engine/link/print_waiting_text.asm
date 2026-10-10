@@ -13,9 +13,11 @@ PrintWaitingText::
 .border_done
 	hlcoord 4, 11
 	ld de, WaitingText
+	call DistLangString
 	call PlaceString
 	ld c, 50
 	jp DelayFrames
 
 WaitingText:
-	db "UN MOMENT…@"
+; French, then English for DistLangString (distribution ROM language switch)
+	db "UN MOMENT…@", "Waiting...!@"

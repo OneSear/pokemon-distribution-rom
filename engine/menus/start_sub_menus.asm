@@ -546,6 +546,7 @@ DrawTrainerInfo:
 	call PlaceString
 	hlcoord 2, 2
 	ld de, TrainerInfo_NameMoneyTimeText
+	call DistLangString
 	call PlaceString
 	hlcoord 7, 2
 	ld de, wPlayerName
@@ -570,9 +571,13 @@ TrainerInfo_FarCopyData:
 	jp FarCopyData2
 
 TrainerInfo_NameMoneyTimeText:
+; French, then English for DistLangString (distribution ROM language switch)
 	db   "NOM/"
 	next "ARG./"
 	next "TEMPS/@"
+	db   "NAME/"
+	next "MONEY/"
+	next "TIME/@"
 
 ; $76 is a circle tile
 TrainerInfo_BadgesText:

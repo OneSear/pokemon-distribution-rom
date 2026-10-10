@@ -1,6 +1,7 @@
 Trade_PrintPlayerMonInfoText:
 	hlcoord 5, 0
 	ld de, Trade_MonInfoText
+	call DistLangString
 	call PlaceString
 	ld a, [wTradedPlayerMonSpecies]
 	ld [wPokedexNum], a
@@ -23,6 +24,7 @@ Trade_PrintPlayerMonInfoText:
 Trade_PrintEnemyMonInfoText:
 	hlcoord 5, 10
 	ld de, Trade_MonInfoText
+	call DistLangString
 	call PlaceString
 	ld a, [wTradedEnemyMonSpecies]
 	ld [wPokedexNum], a
@@ -47,3 +49,7 @@ Trade_MonInfoText:
 	next ""
 	next "DO/"
 	next "№<ID><DOT>@"
+	db   "──№<DOT>" ; English, for DistLangString
+	next ""
+	next "OT/"
+	next "<ID>№<DOT>@"

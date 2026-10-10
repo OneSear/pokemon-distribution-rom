@@ -15,6 +15,7 @@ CableClub_DoBattleOrTrade:
 	call CableClub_TextBoxBorder
 	hlcoord 4, 10
 	ld de, PleaseWaitString
+	call DistLangString
 	call PlaceString
 	ld hl, wPlayerNumHits
 	xor a
@@ -293,7 +294,8 @@ CableClub_DoBattleOrTradeAgain:
 	jr CallCurrentTradeCenterFunction
 
 PleaseWaitString:
-	db "ATTENDEZ SVP@"
+; French, then English for DistLangString (distribution ROM language switch)
+	db "ATTENDEZ SVP@", "PLEASE WAIT!@"
 
 CallCurrentTradeCenterFunction:
 	ld hl, TradeCenterPointerTable
@@ -473,6 +475,7 @@ TradeCenter_SelectMon:
 	call CableClub_TextBoxBorder
 	hlcoord 2, 16
 	ld de, .statsTrade
+	call DistLangString
 	call PlaceString
 	xor a
 	ld [wCurrentMenuItem], a
@@ -536,7 +539,7 @@ TradeCenter_SelectMon:
 	ld [wTradeCenterPointerTableIndex], a
 	jp CallCurrentTradeCenterFunction
 .statsTrade
-	db "STATS     ECHANGE@"
+	db "STATS     ECHANGE@", "STATS     TRADE@" ; French, then English
 .selectedCancelMenuItem
 	ld a, [wCurrentMenuItem]
 	ld b, a
@@ -609,10 +612,12 @@ TradeCenter_DrawCancelBox:
 	call CableClub_TextBoxBorder
 	hlcoord 2, 16
 	ld de, CancelTextString
+	call DistLangString
 	jp PlaceString
 
 CancelTextString:
-	db "ANNULER@"
+; French, then English for DistLangString (distribution ROM language switch)
+	db "ANNULER@", "CANCEL@"
 
 TradeCenter_PlaceSelectedEnemyMonMenuCursor:
 	ld a, [wSerialSyncAndExchangeNybbleReceiveData]
@@ -735,6 +740,7 @@ TradeCenter_Trade:
 	call CableClub_TextBoxBorder
 	hlcoord 1, 14
 	ld de, TradeCanceled
+	call DistLangString
 	call PlaceString
 	call Serial_PrintWaitingTextAndSyncAndExchangeNybble
 	jp .tradeCancelled
@@ -752,6 +758,7 @@ TradeCenter_Trade:
 	call CableClub_TextBoxBorder
 	hlcoord 1, 14
 	ld de, TradeCanceled
+	call DistLangString
 	call PlaceString
 	jp .tradeCancelled
 .doTrade
@@ -860,6 +867,7 @@ TradeCenter_Trade:
 	call CableClub_TextBoxBorder
 	hlcoord 1, 14
 	ld de, TradeCompleted
+	call DistLangString
 	call PlaceString
 	predef SavePartyAndDexData ; this allows reset into Pokecenter
 	vc_hook Trade_save_game_end
@@ -879,12 +887,15 @@ WillBeTradedText:
 	text_far _WillBeTradedText
 	text_end
 
+; French, then English for DistLangString (distribution ROM language switch)
 TradeCompleted:
-	db "ECHANGE TERMINE!@"
+	db "ECHANGE TERMINE!@", "Trade completed!@"
 
 TradeCanceled:
 	db   "Dommage! L'échange"
 	next "est annulé!@"
+	db   "Too bad! The trade"
+	next "was canceled!@"
 
 TradeCenterPointerTable:
 	dw TradeCenter_SelectMon

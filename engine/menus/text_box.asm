@@ -279,6 +279,7 @@ DisplayTwoOptionMenu:
 	ld d, a
 	pop hl
 	add hl, bc
+	call DistLangString
 	call PlaceString
 	ld hl, wStatusFlags5
 	res BIT_NO_TEXT_DELAY, [hl]
@@ -406,6 +407,7 @@ DisplayFieldMoveMonMenu:
 	ldh [hFieldMoveMonMenuTopMenuItemX], a
 	hlcoord 13, 12
 	ld de, PokemonMenuEntries
+	call DistLangString
 	jp PlaceString
 
 .fieldMovesExist
@@ -500,14 +502,19 @@ DisplayFieldMoveMonMenu:
 	ld d, 0
 	add hl, de
 	ld de, PokemonMenuEntries
+	call DistLangString
 	jp PlaceString
 
 INCLUDE "data/moves/field_move_names.asm"
 
 PokemonMenuEntries:
+; French, then English for DistLangString (distribution ROM language switch)
 	db   "STATS"
 	next "ORDRE"
 	next "RETOUR@"
+	db   "STATS"
+	next "SWITCH"
+	next "CANCEL@"
 
 GetMonFieldMoves:
 	ld a, [wWhichPokemon]

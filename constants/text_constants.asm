@@ -7,6 +7,11 @@ DEF MOVE_NAME_LENGTH    EQU 14
 DEF GYM_CITY_LENGTH     EQU 17
 DEF NAME_BUFFER_LENGTH  EQU 20
 
+; wDistLanguage (distribution ROM). French is 0, so cleared WRAM means French.
+	const_def
+	const LANG_FRENCH  ; 0
+	const LANG_ENGLISH ; 1
+
 ; PrintNumber, PrintBCDNumber
 	const_def 5
 	const BIT_MONEY_SIGN     ; 5

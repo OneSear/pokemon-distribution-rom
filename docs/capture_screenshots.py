@@ -186,6 +186,7 @@ def save_png(frame, path, scale=3):
 def main():
     wDistMonCursor, wDistLevel = 0xDEE7, 0xDEE8
     wPartyCount, wCurMap = 0xD168, 0xD363
+    wTileMap = 0xC3A0
     VIRIDIAN_POKECENTER = 0x29
 
     for path, what in ((CORE, "SameBoy libretro core"), (ROM, "ROM (run `make`)")):
@@ -206,9 +207,17 @@ def main():
     emu.run(700)
     shot("title")
 
-    # Start drops into the gift menu; DistributionMain writes the default level
-    # before it draws anything, so that is the reliable "we are in" signal.
+    # Start opens the language screen, with the cursor on FRANCAIS. It is only
+    # drawn once the title's cry and fade are done: wait for the "L" of
+    # "LANGUAGE / LANGUE" (row 4, column 2) to reach the tilemap.
     emu.press(START)
+    emu.wait(wTileMap + 4 * 20 + 2, 0x8b, label="language screen")
+    emu.run(20)
+    shot("language")
+
+    # A keeps French and drops into the gift menu; DistributionMain writes the
+    # default level before it draws anything, so that is the "we are in" signal.
+    emu.press(A)
     emu.wait(wDistLevel, 50, label="wDistLevel")
     emu.run(120)
 

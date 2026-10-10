@@ -2,12 +2,18 @@ GetMonName::
 	push hl
 	ldh a, [hLoadedROMBank]
 	push af
+	ld hl, MonsterNames
+	ld a, [wDistLanguage]
+	and a ; LANG_FRENCH
 	ld a, BANK(MonsterNames)
+	jr z, .gotTable
+	ld hl, MonsterNames_EN
+	ld a, BANK(MonsterNames_EN)
+.gotTable
 	ldh [hLoadedROMBank], a
 	ld [rROMB], a
 	ld a, [wNamedObjectIndex]
 	dec a
-	ld hl, MonsterNames
 	ld c, NAME_LENGTH - 1
 	ld b, 0
 	call AddNTimes

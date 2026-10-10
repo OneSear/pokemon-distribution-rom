@@ -116,6 +116,7 @@ StatusScreen:
 	call DrawLineBox ; Draws the box around types, ID No. and OT
 	hlcoord 10, 9
 	ld de, TypesIDNoOTText
+	call DistLangString
 	call PlaceString
 	hlcoord 11, 3
 	predef DrawHP
@@ -129,10 +130,12 @@ StatusScreen:
 	jr nz, .StatusWritten
 	hlcoord 16, 6
 	ld de, OKText
+	call DistLangString
 	call PlaceString ; "OK"
 .StatusWritten
 	hlcoord 9, 6
 	ld de, StatusText
+	call DistLangString
 	call PlaceString ; "STATUS/"
 	hlcoord 14, 2
 	call PrintLevel
@@ -208,12 +211,17 @@ TypesIDNoOTText:
 	next "№<ID>/"
 	next "DO/"
 	next "@"
+	db   "TYPE1/" ; English, for DistLangString
+	next "TYPE2/"
+	next "<ID>№/"
+	next "OT/"
+	next "@"
 
 StatusText:
-	db "STATUT/@"
+	db "STATUT/@", "STATUS/@"
 
 OKText:
-	db "OK@"
+	db "OK@", "OK@"
 
 ; Draws a line starting from hl high b and wide c
 DrawLineBox:
@@ -258,6 +266,7 @@ PrintStatsBox:
 	push bc
 	push hl
 	ld de, .StatsText
+	call DistLangString
 	call PlaceString
 	pop hl
 	pop bc
@@ -285,6 +294,10 @@ PrintStatsBox:
 	next "DEF"
 	next "VIT"
 	next "SPE@"
+	db   "ATTACK" ; English, for DistLangString
+	next "DEFENSE"
+	next "SPEED"
+	next "SPECIAL@"
 
 StatusScreen2:
 	ldh a, [hTileAnimations]
@@ -382,6 +395,7 @@ StatusScreen2:
 .PPDone
 	hlcoord 9, 3
 	ld de, StatusScreenExpText
+	call DistLangString
 	call PlaceString
 	ld a, [wLoadedMonLevel]
 	push af
@@ -460,6 +474,8 @@ CalcExpToLevelUp:
 StatusScreenExpText:
 	db   "PTS EXP."
 	next "PROCH.NIV.@"
+	db   "EXP POINTS" ; English, for DistLangString
+	next "LEVEL UP@"
 
 StatusScreen_ClearName:
 	ld bc, NAME_LENGTH - 1
