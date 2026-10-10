@@ -107,7 +107,8 @@ DEF LCDC_DEFAULT EQU LCDC_ON | LCDC_WIN_9C00 | LCDC_WIN_ON | LCDC_BLOCK21 | LCDC
 	dec a
 	ld [wUpdateSpritesEnabled], a
 
-	predef PlayIntro
+	; Distribution ROM: skip the copyright screen and the intro battle animation.
+	; predef PlayIntro
 
 	call DisableLCD
 	call ClearVram

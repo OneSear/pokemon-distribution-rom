@@ -6,6 +6,9 @@ _Joypad::
 	cp PAD_BUTTONS ; soft reset
 	jp z, TrySoftReset
 
+	call CheckDistributionReturn ; may not return
+
+	ldh a, [hJoyInput]
 	ld b, a
 	ldh a, [hJoyLast]
 	ld e, a
@@ -46,6 +49,37 @@ DiscardButtonPresses:
 	ldh [hJoyPressed], a
 	ldh [hJoyReleased], a
 	ret
+
+; Distribution ROM: holding Start+Select, with nothing else pressed, drops the
+; operator back on the gift menu so the next person can be served without a
+; power cycle. Checked here rather than in the menu code so it works from the
+; overworld after a trade, and it reads hJoyInput directly, so wJoyIgnore and
+; BIT_DISABLE_JOYPAD cannot lock it out mid-script.
+;
+; Refuses to fire while a link is up: yanking the ROM out from under a trade in
+; progress leaves the other console hanging mid-transfer, and that is somebody
+; else's cartridge. Leaving the Cable Club clears wLinkState, so the combo is
+; live again by the time a gift has actually been handed over.
+DEF DIST_RETURN_FRAMES EQU 30
+
+CheckDistributionReturn:
+	ldh a, [hJoyInput]
+	cp PAD_START | PAD_SELECT
+	jr z, .held
+.notHeld
+	xor a
+	ld [wDistReturnHold], a
+	ret
+.held
+	ld a, [wLinkState]
+	and a
+	jr nz, .notHeld
+	ld hl, wDistReturnHold
+	inc [hl]
+	ld a, [hl]
+	cp DIST_RETURN_FRAMES
+	ret c
+	jpfar DistributionReturnToMenu
 
 TrySoftReset:
 	call DelayFrame

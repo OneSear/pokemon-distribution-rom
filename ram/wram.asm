@@ -2255,3 +2255,24 @@ SECTION "Stack", WRAM0
 wStack:: db
 
 ENDSECTION
+
+
+SECTION "Distribution State", WRAM0
+
+wDistMonCursor:: db ; index of the highlighted gift mon (0 - DIST_NUM_MONS-1)
+wDistLevel:: db     ; chosen level (1-100)
+wDistScrollTop:: db ; index shown on the first visible row of the list
+wDistSpriteDelay:: db ; idle frames left before the sprite preview reloads
+wDistSetCursor:: db ; highlighted row on the settings screen
+; Consecutive joypad polls with Start+Select held, counted by
+; CheckDistributionReturn. Must survive DistributionReturnToMenu, which is why
+; that routine does not clear WRAM.
+wDistReturnHold:: db
+; OT name stamped onto every gift mon. Seeded from DistDefaultName at boot and
+; editable from the settings screen, so it has to live in RAM rather than ROM.
+wDistPlayerName:: ds NAME_LENGTH
+; "jump to a Pokedex number" prompt. Appended here on purpose: inserting a
+; variable above shifts every address below it, which has already silently
+; broken test scripts once.
+wDistJumpDigits:: ds 3 ; hundreds, tens, ones
+wDistJumpPos:: db      ; which of the three is being edited (0-2)

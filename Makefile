@@ -1,10 +1,11 @@
-roms := \
-	pokered.gbc \
-	pokeblue.gbc \
-	pokeblue_debug.gbc
-patches := \
-	pokered.patch \
-	pokeblue.patch
+### Pokémon distribution ROM.
+###
+### One target: pokemon_distribution.gb. The extension is .gb rather than the
+### .gbc this disassembly used upstream because the ROM really is a plain DMG
+### game — the CGB flag at $0143 is $00. It runs on a Game Boy, a Super Game Boy
+### and a Game Boy Color in compatibility mode alike.
+
+rom := pokemon_distribution.gb
 
 rom_obj := \
 	audio.o \
@@ -17,20 +18,10 @@ rom_obj := \
 	gfx/sprites.o \
 	gfx/tilesets.o
 
-pokered_obj        := $(rom_obj:.o=_red.o)
-pokeblue_obj       := $(rom_obj:.o=_blue.o)
-pokeblue_debug_obj := $(rom_obj:.o=_blue_debug.o)
-pokered_vc_obj     := $(rom_obj:.o=_red_vc.o)
-pokeblue_vc_obj    := $(rom_obj:.o=_blue_vc.o)
+pokemon_distribution_obj := $(rom_obj:.o=_dist.o)
 
 
 ### Build tools
-
-ifeq (,$(shell command -v sha1sum 2>/dev/null))
-SHA1 := shasum
-else
-SHA1 := sha1sum
-endif
 
 RGBDS ?=
 RGBASM  ?= $(RGBDS)rgbasm
@@ -45,14 +36,9 @@ RGBLINK ?= $(RGBDS)rgblink
 .SECONDEXPANSION:
 .PRECIOUS:
 .SECONDARY:
-.PHONY: all red blue blue_debug clean tidy compare tools
+.PHONY: all clean tidy tools
 
-all: $(roms)
-red:        pokered.gbc
-blue:       pokeblue.gbc
-blue_debug: pokeblue_debug.gbc
-red_vc:     pokered.patch
-blue_vc:    pokeblue.patch
+all: $(rom)
 
 clean: tidy
 	find gfx \
@@ -62,24 +48,12 @@ clean: tidy
 	     -delete
 
 tidy:
-	$(RM) $(roms) \
-	      $(roms:.gbc=.sym) \
-	      $(roms:.gbc=.map) \
-	      $(patches) \
-	      $(patches:.patch=_vc.gbc) \
-	      $(patches:.patch=_vc.sym) \
-	      $(patches:.patch=_vc.map) \
-	      $(patches:%.patch=vc/%.constants.sym) \
-	      $(pokered_obj) \
-	      $(pokeblue_obj) \
-	      $(pokered_vc_obj) \
-	      $(pokeblue_vc_obj) \
-	      $(pokeblue_debug_obj) \
+	$(RM) $(rom) \
+	      $(rom:.gb=.sym) \
+	      $(rom:.gb=.map) \
+	      $(pokemon_distribution_obj) \
 	      rgbdscheck.o
 	$(MAKE) clean -C tools/
-
-compare: $(roms) $(patches)
-	@$(SHA1) -c roms.sha1
 
 tools:
 	$(MAKE) -C tools/
@@ -91,14 +65,10 @@ ifeq ($(DEBUG),1)
 RGBASMFLAGS += -E
 endif
 
-$(pokered_obj):        RGBASMFLAGS += -D _RED
-$(pokeblue_obj):       RGBASMFLAGS += -D _BLUE
-$(pokeblue_debug_obj): RGBASMFLAGS += -D _BLUE -D _DEBUG
-$(pokered_vc_obj):     RGBASMFLAGS += -D _RED -D _RED_VC
-$(pokeblue_vc_obj):    RGBASMFLAGS += -D _BLUE -D _BLUE_VC
-
-%.patch: %_vc.gbc %.gbc vc/%.patch.template
-	tools/make_patch $*_vc.sym $^ $@
+# This is a fork of the French Rouge, so _RED is the side of every version
+# conditional we want. Over a hundred `IF DEF(_RED)` blocks depend on it, so it
+# is not optional.
+$(pokemon_distribution_obj): RGBASMFLAGS += -D _RED
 
 rgbdscheck.o: rgbdscheck.asm
 	$(RGBASM) -o $@ $<
@@ -118,12 +88,8 @@ $1: $2 $$(shell tools/scan_includes $2) $(preinclude_deps) | rgbdscheck.o
 	$$(RGBASM) $$(RGBASMFLAGS) -o $$@ $$<
 endef
 
-# Dependencies for objects (drop _red and _blue from asm file basenames)
-$(foreach obj, $(pokered_obj), $(eval $(call DEP,$(obj),$(obj:_red.o=.asm))))
-$(foreach obj, $(pokeblue_obj), $(eval $(call DEP,$(obj),$(obj:_blue.o=.asm))))
-$(foreach obj, $(pokeblue_debug_obj), $(eval $(call DEP,$(obj),$(obj:_blue_debug.o=.asm))))
-$(foreach obj, $(pokered_vc_obj), $(eval $(call DEP,$(obj),$(obj:_red_vc.o=.asm))))
-$(foreach obj, $(pokeblue_vc_obj), $(eval $(call DEP,$(obj),$(obj:_blue_vc.o=.asm))))
+# Dependencies for objects (drop the _dist suffix from asm file basenames)
+$(foreach obj, $(pokemon_distribution_obj), $(eval $(call DEP,$(obj),$(obj:_dist.o=.asm))))
 
 endif
 
@@ -131,19 +97,15 @@ endif
 %.asm: ;
 
 
-pokered_pad        = 0x00
-pokeblue_pad       = 0x00
-pokered_vc_pad     = 0x00
-pokeblue_vc_pad    = 0x00
-pokeblue_debug_pad = 0xff
+pokemon_distribution_pad = 0x00
+# Header left exactly as the upstream red build wrote it, so the ROM bytes are
+# unchanged by the rename. -s sets the SGB flag, which the palette handling in
+# DistributionMain depends on; -j marks it non-Japanese. Change the -t title if
+# you want the cart to identify itself as something other than POKEMON RED (max
+# 16 characters).
+pokemon_distribution_opt = -jsv -n 0 -k 01 -l 0x33 -m MBC5+RAM+BATTERY -r 03 -t "POKEMON RED"
 
-pokered_opt        = -jsv -n 0 -k 01 -l 0x33 -m MBC5+RAM+BATTERY -r 03 -t "POKEMON RED"
-pokeblue_opt       = -jsv -n 0 -k 01 -l 0x33 -m MBC5+RAM+BATTERY -r 03 -t "POKEMON BLUE"
-pokeblue_debug_opt = -jsv -n 0 -k 01 -l 0x33 -m MBC5+RAM+BATTERY -r 03 -t "POKEMON BLUE"
-pokered_vc_opt     = -jsv -n 0 -k 01 -l 0x33 -m MBC5+RAM+BATTERY -r 03 -t "POKEMON RED"
-pokeblue_vc_opt    = -jsv -n 0 -k 01 -l 0x33 -m MBC5+RAM+BATTERY -r 03 -t "POKEMON BLUE"
-
-%.gbc: $$(%_obj) layout.link
+%.gb: $$(%_obj) layout.link
 	$(RGBLINK) -p $($*_pad) -d -m $*.map -n $*.sym -l layout.link -o $@ $(filter %.o,$^)
 	$(RGBFIX) -p $($*_pad) $($*_opt) $@
 
@@ -153,9 +115,6 @@ pokeblue_vc_opt    = -jsv -n 0 -k 01 -l 0x33 -m MBC5+RAM+BATTERY -r 03 -t "POKEM
 gfx/battle/move_anim_0.2bpp: tools/gfx += --trim-whitespace
 gfx/battle/move_anim_1.2bpp: tools/gfx += --trim-whitespace
 
-gfx/intro/blue_jigglypuff_1.2bpp: rgbgfx += --columns
-gfx/intro/blue_jigglypuff_2.2bpp: rgbgfx += --columns
-gfx/intro/blue_jigglypuff_3.2bpp: rgbgfx += --columns
 gfx/intro/red_nidorino_1.2bpp: rgbgfx += --columns
 gfx/intro/red_nidorino_2.2bpp: rgbgfx += --columns
 gfx/intro/red_nidorino_3.2bpp: rgbgfx += --columns
@@ -165,7 +124,6 @@ gfx/intro/gengar.2bpp: tools/gfx += --remove-duplicates --preserve=0x19,0x76
 gfx/credits/the_end.2bpp: tools/gfx += --interleave --png=$<
 
 gfx/slots/red_slots_1.2bpp: tools/gfx += --trim-whitespace
-gfx/slots/blue_slots_1.2bpp: tools/gfx += --trim-whitespace
 
 gfx/tilesets/%.2bpp: tools/gfx += --trim-whitespace
 gfx/tilesets/reds_house.2bpp: tools/gfx += --preserve=0x48
